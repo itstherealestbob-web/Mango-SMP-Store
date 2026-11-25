@@ -500,9 +500,16 @@ document.querySelectorAll(".fall").forEach((box) => {
 });
 
 function render() {
-  const ids = Object.keys(cart).filter((id) => cart[id] > 0 && ALL.find((p) => p.id === id));
+  const ids = Object.keys(cart).filter(
+    (id) => cart[id] > 0 && ALL.find((p) => p.id === id)
+  );
+
   const count = ids.reduce((s, id) => s + cart[id], 0);
-  const total = ids.reduce((s, id) => s + cart[id] * ALL.find((p) => p.id === id).price, 0);
+  const total = ids.reduce(
+    (s, id) => s + cart[id] * ALL.find((p) => p.id === id).price,
+    0
+  );
+
   $("count").textContent = count;
   $("total").textContent = money(total);
 
@@ -511,26 +518,25 @@ function render() {
     $("note").textContent = "";
     return;
   }
+
   $("cartBody").innerHTML = ids.map((id) => {
     const p = ALL.find((x) => x.id === id);
-    const ready = p.url && p.url.indexOf("http") === 0;
     return `
       <div class="row">
         ${p.icon ? `<div class="ic">${p.icon}</div>` : ""}
         <div class="info">
-          <b>${p.name}</b><span>${money(p.price)}</span><br>
-          ${ready
-            ? `<a class="pay" href="${p.url}" target="_blank" rel="noopener">Pay for this item</a>`
-            : `<span style="color:#c77">Checkout link not set yet</span>`}
+          <b>${p.name}</b><span>${money(p.price)}</span>
         </div>
         <div class="qty">
-          <button data-dec="${id}">−</button><span>${cart[id]}</span><button data-inc="${id}">+</button>
+          <button data-dec="${id}">−</button>
+          <span>${cart[id]}</span>
+          <button data-inc="${id}">+</button>
         </div>
       </div>`;
   }).join("");
-  $("note").textContent = ids.length > 1
-    ? "Each item is paid for separately. Use the Pay button next to each one."
-    : "You will choose quantity and enter your Minecraft username at checkout.";
+
+  $("note").textContent =
+    "Your whole cart will be paid for together in one secure checkout.";
 }
 
 function openCart(open) {
@@ -550,17 +556,45 @@ $("openCart").onclick = () => openCart(true);
 $("closeCart").onclick = () => openCart(false);
 $("overlay").onclick = () => openCart(false);
 
+
 $("checkout").onclick = () => {
-  const ids = Object.keys(cart).filter((id) => cart[id] > 0);
-  if (!ids.length) { $("note").textContent = "Add something to your cart first."; return; }
-  if (ids.length === 1) {
-    const p = ALL.find((x) => x.id === ids[0]);
-    if (p.url && p.url.indexOf("http") === 0) { window.open(p.url, "_blank", "noopener"); return; }
-    $("note").textContent = "This item's checkout link hasn't been set up yet.";
-  } else {
-    $("note").textContent = "Use the Pay button next to each item to check out.";
+  const ids = Object.keys(cart).filter(
+    (id) => cart[id] > 0
+  );
+
+  if (!ids.length) {
+    $("note").textContent = "Add something to your cart first.";
+    return;
   }
+
+  if (!mcUser || !NAME_RE.test(mcUser)) {
+    $("note").textContent = "Please link your Minecraft account first.";
+    openLink(true);
+    return;
+  }
+
+  const checkoutForm = document.createElement("form");
+  checkoutForm.method = "POST";
+  checkoutForm.action = "https://script.google.com/macros/s/AKfycbzEIKCRMtMSguoD33fHqX0BljlumyR5N8qKcIJz4ZSM8nA29AA1KLE-sZxrfh7rHj6_/exec";
+
+  const cartInput = document.createElement("input");
+  cartInput.type = "hidden";
+  cartInput.name = "cart";
+  cartInput.value = JSON.stringify(cart);
+
+  const usernameInput = document.createElement("input");
+  usernameInput.type = "hidden";
+  usernameInput.name = "minecraft_username";
+  usernameInput.value = mcUser;
+
+  checkoutForm.appendChild(cartInput);
+  checkoutForm.appendChild(usernameInput);
+  document.body.appendChild(checkoutForm);
+
+  $("note").textContent = "Opening secure Stripe checkout...";
+  checkoutForm.submit();
 };
+
 
 render();
 
