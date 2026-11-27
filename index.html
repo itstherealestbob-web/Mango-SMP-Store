@@ -79,7 +79,12 @@
   .btn {
     padding: 17px 32px; border-radius: 999px; font-weight: 700; font-size: 17px;
     transition: transform .15s, background .15s;
-    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer !important;
+  }
+  /* Keep the hand cursor over every part of the Browse buttons, including their text */
+  .btn, .btn * {
+    cursor: pointer !important;
   }
   .btn:hover { transform: translateY(-2px); }
   .btn.primary { background: var(--amber); color: #000; }
